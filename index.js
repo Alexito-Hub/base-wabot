@@ -30,7 +30,8 @@ const { exec } = require('child_process')
     
     
         client.ev.on('connection.update', v => {
-         const { connection, lastDisconnect } = v
+         const { connection, lastDisconnect, qr } = v
+           if (qr) console.info('Escanea el código qr!');
          if (connection === 'close') {
           if (lastDisconnect.error.output.statusCode !== 401) {
              start()
