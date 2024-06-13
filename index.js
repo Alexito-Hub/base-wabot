@@ -2,7 +2,8 @@ const {
      default: WAConnection,
      useMultiFileAuthState,
      generateWAMessageFromContent,
-     makeCacheableSignalKeyStore
+     makeCacheableSignalKeyStore,
+     getContentType
  } = require('@whiskeysockets/baileys')
 
 const pino = require('pino')
@@ -21,9 +22,9 @@ const { exec } = require('child_process')
             printQRInTerminal: true,
             browser: ['BaseBot', 'Firefox', '3.0.0'],
             auth: {
-		       creds: state.creds,
-	           keys: makeCacheableSignalKeyStore(state.keys, level),
-	          }
+		creds: state.creds,
+	        keys: makeCacheableSignalKeyStore(state.keys, level),
+               }
            })
     
     
@@ -32,17 +33,18 @@ const { exec } = require('child_process')
          const { connection, lastDisconnect } = v
          if (connection === 'close') {
           if (lastDisconnect.error.output.statusCode !== 401) {
-            start()
-        } else {
+             start()
+         } else {
            exec('rm -rf session')
             console.error('Conexión con WhatsApp cerrada, Escanee nuevamente el código qr!')
-         start()
-       }
+         start();
+           }
          } else if (connection == 'open') {
            console.log('Bot conectado')
-          }
-        })
-        client.ev.on('creds.update', saveCreds)
+           };
+        });
+	    
+        client.ev.on('creds.update', saveCreds);
 
 
 
@@ -50,10 +52,11 @@ const { exec } = require('child_process')
       client.ev.on('messages.upsert', async m => {
          if (!m.messages) return
             
-          const v = m.messages[0]
-          const from = v.key.remoteJid
-          const sender = (v.key.participant || v.key.remoteJid)
-          const type = Object.keys(v.message)[0]
+          const v = m.messages[m.messages.length - 1];
+          const from = v.key.remoteJid;
+          const sender = (v.key.participant || v.key.remoteJid);
+	  const isMe = v.key.fromMe || client.user.id.split(':')[0] === sender.split('@')[0];
+          const type = getContentType(v.message);
           const body =
           (type == 'imageMessage' || type == 'videoMessage') ? v.message[type].caption :
           (type == 'conversation') ? v.message[type] :
@@ -63,24 +66,13 @@ const { exec } = require('child_process')
          await client.readMessages([v.key])
 
 
-          const reply = async (text) => {
-            msg = generateWAMessageFromContent(from, {
-              extendedTextMessage: {
-                 text,
-               contextInfo: {
-                externalAdReply: {
-              title: '🚩 Simple Base Wa Bot',
-               showAdAttribution: true,
-               thumbnailUrl: 'https://telegra.ph/file/a88de6973f18046e409a9.jpg'
-                 }}
-               }},
-                { quoted: v })
-           await client.relayMessage(from, msg.message, {})
-          }
+          const reply = async (text) => 
+            await client.sendMessage(from, { text }, { quoted: v });
+          
 
 
 
-             if (!['5212213261679', client.user.id.split`:`[0]].includes(sender)) {
+             if (isMe) {
                  if (body.startsWith('>')) {
                     try {
                 let value = await eval(`(async() => { ${body.slice(1)} })()`)
