@@ -3,9 +3,7 @@
     "start": "node index.js"
   },
    "dependencies": {
-     "@whiskeysockets/baileys": "^6.0.0",
-     "@adiwajshing/keyed-db": "^0.2.4",
-     "pino": "^7.0.5",
+     "@whiskeysockets/baileys": "latest",
      "util": "^0.12.3",
      "qrcode-terminal": "^0.12.0",
      "child_process": "^1.0.2"
