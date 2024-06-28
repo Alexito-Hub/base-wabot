@@ -89,7 +89,7 @@ const { exec } = require('child_process')
                      let value = await eval(`(async() => { return ${body.slice(1)} })()`)
                        await reply(format(value))
                      } catch(e) {
-                     await reply(e)
+                      await reply(e)
                          }
                       }
                    }
